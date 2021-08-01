@@ -13,34 +13,43 @@ Modified July 2021, minor fixes
 @author: Eric Lindsey, University of New Mexico
 """
 
-import configparser,argparse,requests,csv,subprocess,time,os
+import configparser
+import argparse
+import requests
+import csv
+import subprocess
+import time
+import os
+
 #optional use urllib instead of wget
 #from urllib.request import urlopen
+
 import multiprocessing as mp
 
 # hard-coded ASF query URL:
-asf_baseurl='https://api.daac.asf.alaska.edu/services/search/param?'
+asf_baseurl = 'https://api.daac.asf.alaska.edu/services/search/param?'
 
 # hard-coded AWS base URL for public dataset downloads:
 aws_baseurl = 'http://sentinel1-slc-seasia-pds.s3-website-ap-southeast-1.amazonaws.com/datasets/slc/v1.1/'
 
+
 def downloadGranule(row):
-    orig_dir=os.getcwd()
+    orig_dir = os.getcwd()
     download_site = row['Download Site']
-    frame_dir='P' + row['Path Number'].zfill(3) + '/F' + row['Frame Number'].zfill(4)
+    frame_dir = 'P' + row['Path Number'].zfill(3) + '/F' + row['Frame Number'].zfill(4)
     print('Downloading granule ', row['Granule Name'], 'to directory', frame_dir)
     #create frame directory
     os.makedirs(frame_dir, exist_ok=True)
     os.chdir(frame_dir)
-    status=0
+    status = 0
     if(download_site == 'AWS' or download_site == 'both'):
         print('Try AWS download first.')
         # create url for AWS download, based on the granule name
-        row_date=row['Acquisition Date']
-        row_year=row_date[0:4]
-        row_month=row_date[5:7]
-        row_day=row_date[8:10]
-        datefolder= row_year + '/' + row_month + '/' + row_day +'/'
+        row_date = row['Acquisition Date']
+        row_year = row_date[0:4]
+        row_month = row_date[5:7]
+        row_day = row_date[8:10]
+        datefolder = row_year + '/' + row_month + '/' + row_day + '/'
         aws_url = aws_baseurl + datefolder + row['Granule Name'] + '/' + row['Granule Name'] + '.zip'
         # run the download command
         status = downloadGranule_wget(aws_url)
@@ -67,7 +76,7 @@ def downloadGranule(row):
 #    return 0
 
 def downloadGranule_wget(options_and_url):
-    cmd='wget -c --no-check-certificate -q ' + options_and_url
+    cmd = 'wget ' + options_and_url
     print(cmd)
     result = subprocess.run(cmd, shell=True, capture_output=True)
     return result.returncode
@@ -88,12 +97,12 @@ if __name__ == '__main__':
     download_site=config.get('download','download_site',fallback='both')
     nproc=config.getint('download','nproc',fallback=1)
     output_format=config.get('api_search','output',fallback='csv')
-    
+
     # we parse the config options directly into a query... this may be too naive
     arg_list=config.items('api_search')
     # join as a single argument string
     arg_str='&'.join('%s=%s'%(item[0],item[1]) for item in arg_list)
-    
+
     # form into a query
     argurl=asf_baseurl + arg_str
     # example query:
@@ -107,7 +116,7 @@ if __name__ == '__main__':
     if output_format == 'csv':
         reader = csv.DictReader(r.text.splitlines())
         rows=list(reader)
-    
+
     # save the results to a file
     logtime=time.strftime("%Y_%m_%d-%H_%M_%S")
     query_log='asf_query_%s.%s'%(logtime,output_format)
@@ -127,7 +136,7 @@ if __name__ == '__main__':
                     print('Scene %s, Path %s / Frame %s' %(row['Granule Name'], row['Path Number'], row['Frame Number']))
         else:
             print(r.text)
-        
+
     # If a download is requested:
     # parse result into a list of granules, figure out the correct path, and download each one.
     if output_format != 'csv' and args.download:
