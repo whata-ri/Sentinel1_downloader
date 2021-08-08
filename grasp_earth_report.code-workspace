@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"docker.host": "ssh://ubuntu@aws_sentinel_downloader"
+	}
+}
