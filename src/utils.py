@@ -14,7 +14,7 @@ def get_metadata(fname) -> Dict:
         Dict: metadata
     """
 
-    block = fname.split("_")
+    block = fname.split("/")[-1].split("_")
     metadata = {
         "satellite": block[0],
         "mode": block[1],

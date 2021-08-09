@@ -5,6 +5,10 @@ import numpy as np
 from typing import List, Tuple, Union
 
 import rasterio as rio
+from rasterio import features
+from shapely.geometry import shape
+import geopandas as gpd
+import affine
 
 
 def crop_raster(input_img: str, dest_dir: str, x_range: List[int], y_range: List[int]):
@@ -57,6 +61,7 @@ def crop_raster(input_img: str, dest_dir: str, x_range: List[int], y_range: List
 
             dst.write(crop_img)
 
+
 def get_affine(input_img: str, x_range: List[int], y_range: List[int]) -> np.array:
     """Get affine transform matrix
 
@@ -80,3 +85,40 @@ def get_affine(input_img: str, x_range: List[int], y_range: List[int]) -> np.arr
         )
 
     return affine
+
+
+def vectorize_raster(input_img: np.ndarray,
+                     transform: affine.Affine,
+                     crs: str,
+                     connectivity: int = 4,
+                     remove_zero: bool = True) -> gpd.GeoDataFrame:
+    """Vectorize raster image using rasterio features method.
+
+    Args:
+        input_img (np.ndarray): Input image to be vectorize
+        transform (affine.Affine): Affine transform matrix
+        crs (str): CRS to follow
+        connectivity (int, optional): Use 4 or 8 pixel connectivity. Defaults to 4.
+        remove_zero (bool, optional): Remove from gpd if the value is 0. Defaults to True.
+
+    Returns:
+        gpd.GeoDataFrame: Vectorized geoDataFrame
+    """
+    values = []
+    geometry = []
+    shapes = features.shapes(input_img,
+                             connectivity=connectivity,
+                             transform=transform)
+    for shapedict, value in shapes:
+        values.append(value)
+        geometry.append(shape(shapedict))
+
+    gdf = gpd.GeoDataFrame(
+        {'value': values, 'geometry': geometry},
+        crs=crs
+    )
+
+    if remove_zero:
+        gdf = gdf[gdf["value"] != 0]
+
+    return gdf
