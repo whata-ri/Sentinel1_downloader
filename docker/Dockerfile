@@ -1,9 +1,10 @@
-FROM ubuntu:20.04
+FROM python
 LABEL maintainer="whata <waku.hatakeyama@gmail.com>"
 
 # install requirements
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends \
+    sudo \
     bc \
     bzip2 \
     ca-certificates \
@@ -16,7 +17,7 @@ RUN apt-get update -y \
     jq \
     nfs-common \
     parallel \
-    python3\
+    python3.9 \
     python3-dev \
     python3-pip \
     python3-wheel \
@@ -25,24 +26,25 @@ RUN apt-get update -y \
 	  vim \
     wget \
     build-essential \
+    sshfs \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# install anaconda
-WORKDIR /tmp
-
-RUN wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh -O ~/anaconda.sh && \
-    /bin/bash ~/anaconda.sh -b -p /opt/conda && \
-    rm ~/anaconda.sh && \
-    /opt/conda/bin/conda clean -tipsy && \
-    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate base" >> ~/.bashrc
+# Create pipenv environment
+COPY requirements.txt /tmp
+RUN python3.9 -m pip install -r /tmp/requirements.txt
 
 SHELL ["/bin/bash", "-c"]
 
 WORKDIR /workspace
 
-RUN git clone https://github.com/whata-ri/Sentinel1_downloader.git
+# Add user
+ARG USER_ID
+ARG GROUP_ID
+RUN addgroup --gid $GROUP_ID user
+RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
+RUN usermod -aG sudo user
+RUN passwd -d user
+USER user
 
 RUN ["/bin/bash"]
