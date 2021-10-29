@@ -3,10 +3,10 @@ import os
 from google.cloud import storage as gcs
 from google.oauth2 import service_account
 
-key_path = "config/google/grasp-earth-report-service-account.json"
-project_id = "grasp-earth-report-322308"
-bucket_name = "grasp-earth-report-taiwan-dam"
-download_dir = "data/taiwan_dam"
+key_path = "config/google/sentinel-datahub-service-account.json"
+project_id = "sentinel-datahub"
+bucket_name = "ge-los-angeles"
+download_dir = "data/los_angeles"
 
 os.makedirs(download_dir, exist_ok=True)
 
@@ -20,5 +20,5 @@ for fname in flist:
     blob = bucket.blob(fname)
     blob.download_to_filename(
         os.path.join(download_dir, fname)
-        )
+    )
     print(f"download: {fname}")
